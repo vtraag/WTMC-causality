@@ -1,0 +1,833 @@
+\documentclass[aspectratio=169,notes=hide,compress]{beamer}
+\usetheme{CWTS}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usetikzlibrary{arrows}
+\tikzset{>=latex}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes.misc}
+\usetikzlibrary{shapes.multipart}
+
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+
+\usepgfplotslibrary{colorbrewer}
+
+\usepackage{marvosym}
+
+\DeclareMathOperator{\doOp}{do}
+
+\pgfplotsset{colormap/Set1-8}
+
+\graphicspath{%
+  {../../../traveller/presentations/logos/}%
+  {figures/}%
+}
+
+\title{Causal diagrams}
+\author{Vincent Traag}
+\date{11 February 2021}
+\institute{WTMC method track -- Computational methods \& modelling}
+
+\setbeamercovered{invisible}
+
+%\includeonlyframes{topic}
+\begin{document}
+
+\frame{\titlepage}
+
+\frame{\tableofcontents}
+
+\section{Observing $\neq$ doing}
+
+\begin{frame}[t]{Predicting}
+
+  \begin{itemize}
+    \item<+-> Predict future citations
+    \begin{itemize}
+      \item<+-> Tweets predict future citations
+    \end{itemize}
+    \item<+-> Predict accept/reject decisions
+    \begin{itemize}
+      \item<+-> Early publication record predicts acceptance
+    \end{itemize}
+    \item<+-> Predict future career paths
+    \begin{itemize}
+      \item<+-> Status of PhD supervisor predicts future career
+    \end{itemize}
+    \item<+-> Predict breakthrough papers
+    \begin{itemize}
+      \item<+-> Multidisciplinary citations predict breakthrough papers
+    \end{itemize}
+  \end{itemize}
+
+  \vskip1cm
+  \uncover<+->{
+    \begin{center}
+      Observations $\rightarrow$ prediction
+    \end{center}
+  }
+\end{frame}
+
+\begin{frame}{Observation}
+
+  \centering
+  \includegraphics[width=0.5\textwidth]{xkcd-correlation}
+
+\end{frame}
+
+\begin{frame}[c]{Observing vs doing}
+
+  \begin{block}{Prediction}
+    Observing $x$ may make $y$ more likely to be observed.
+  \end{block}
+
+  \vskip2cm
+  \pause
+  \begin{block}{Intervention}
+    \emph{Doing} $x$ may make $y$ more likely to be observed.
+  \end{block}
+
+\end{frame}
+
+\tikzstyle{n}=[rectangle,draw=white,fill=Set1-B!50]
+\begin{frame}[c]{Observation vs doing}
+
+  \begin{itemize}
+    \item Predict future citations
+    \begin{itemize}
+      \item Tweets predict future citations
+      \item<2-> Does tweeting your paper increase citations?
+    \end{itemize}
+  \end{itemize}
+  \vskip2cm
+
+  \begin{overlayarea}{\textwidth}{3cm}
+    \begin{center}
+      \begin{tikzpicture}
+        \draw[opacity=0] (-4,-1) grid (3,3);
+        \only<3->{
+          \node[n] (x) at (180:2) {Tweets};
+          \node[n] (y) at (0:2) {Citations};
+        }
+
+        \only<3>{
+          \draw[->] (x) edge (y);
+        }
+
+        \only<4>{
+          \node[n] (z) at (90:2) {``Value''};
+          \draw[->] (z) edge (x)
+                    edge (y);
+        }
+      \end{tikzpicture}
+    \end{center}
+  \end{overlayarea}
+\end{frame}
+
+\begin{frame}[c]{Observation vs doing}
+
+  \begin{itemize}
+    \item Predict accept/reject decisions
+    \begin{itemize}
+      \item Early publication record predicts acceptance
+      \item<2-> Does increasing the publication record make an ``accept'' more likely?
+    \end{itemize}
+  \end{itemize}
+  \vskip2cm
+
+  \begin{overlayarea}{\textwidth}{3cm}
+    \begin{center}
+      \begin{tikzpicture}
+        \draw[opacity=0] (-4,-1) grid (3,3);
+        \only<3->{
+          \node[n] (x) at (180:2) {Publication record};
+          \node[n] (y) at (0:2) {``Accept''};
+        }
+
+        \only<3>{
+          \draw[->] (x) edge (y);
+        }
+
+        \only<4>{
+          \node[n] (z) at (90:2) {``Skill''};
+          \draw[->] (z) edge (x)
+                    edge (y);
+        }
+      \end{tikzpicture}
+    \end{center}
+  \end{overlayarea}
+\end{frame}
+
+\begin{frame}{Causal inference}
+
+  \begin{block}{Causality}
+    \begin{itemize}
+      \item Causality is about \emph{doing} something, about (hypothetical) interventions.
+      \item Important for policy implications:
+        \begin{itemize}
+          \item If you observe $x$ and $y$ are associated, but they are \emph{not} causally related, then \emph{doing} $x$ does not change $y$, and $x$ should not be advocated as a policy to achieve a change in $y$.
+        \end{itemize}
+    \end{itemize}
+  \end{block}
+
+  \pause
+
+  How to discern association from causation?
+
+  \pause
+
+  \begin{block}{Causal inference}
+    \begin{enumerate}
+      \item<+-> Assume a causal model (background knowledge, earlier research, \ldots).
+      \item<+-> Given causal model, under some conditions associations may reveal \emph{causal} effects.
+      \begin{itemize}
+        \item Key to this is understanding $d$-separation.
+      \end{itemize}
+      \item<+-> Test whether implications of causal model hold in observations.
+      \begin{itemize}
+        \item Different causal models may have same observational implications.
+      \end{itemize}
+    \end{enumerate}
+  \end{block}
+
+\end{frame}
+
+\section{$d$-separation simplified}
+
+\tikzstyle{inline}=[anchor=base,rectangle,rounded corners=5pt,
+                    text height=1.25ex,text depth=.25ex,
+                    outer sep=0pt,inner xsep=2pt]
+\begin{frame}{$d$-separation}
+
+  \centering
+  Two variables $x$ and $y$ are associated if between them there is an \\
+  \only<1>{
+    \tikz[baseline] { \node[inline,fill=white] {open}; }\!
+    \tikz[baseline] { \node[inline,fill=white] {undirected path}; }
+  }
+  \only<2>{
+    \tikz[baseline] { \node[inline,fill=white] {open}; }\!
+    \tikz[baseline] { \node[inline,fill=Set1-A!20] {undirected path}; }
+  }
+  \only<3->{
+    \tikz[baseline] { \node[inline,fill=Set1-B!20] {open}; }\!
+    \tikz[baseline] { \node[inline,fill=Set1-A!20] {undirected path}; }
+  }
+
+  \vskip1cm
+
+  \uncover<4->{
+  \begin{tabular}{lll}
+    Technical term & Meaning & Implication \\
+    \toprule
+    $d$-connected & there is an open undirected path & $x$ and $y$ are associated  \\
+    $d$-separated & there is no open undirected path & $x$ and $y$ are not associated
+  \end{tabular}
+  }
+\end{frame}
+
+\tikzstyle{faded}=[opacity=0.3]
+\tikzstyle{n2}=[n,fill=Set1-A!20]
+\begin{frame}{$d$-separation -- Undirected paths}
+
+  \begin{center}
+    \begin{tikzpicture}
+      \draw[opacity=0] (-1,-1) grid (7,2);
+      \node[n,faded] (r) at (0,-0.5)  {Rigour};
+      \node[n,faded] (p) at (1.5,1)   {Published};
+      \node[n,faded] (n) at (4.5,1)   {Novelty};
+      \node[n,faded] (m) at (6,-0.5)  {News mentions};
+      \node[n,faded] (a) at (2.5, -2) {Author reputation};
+      \node[n,faded] (t) at (8,-2)    {TV appearance};
+
+      \draw[opacity=0.3,->]
+        (r) edge (p)
+        (n) edge (p)
+            edge (m)
+        (m) edge (t)
+        (a) edge (p)
+            edge (m);
+
+      \only<2>{
+        \node[n2] (a) at (2.5, -2) {Author reputation};
+        \node[n] (m) at (6,-0.5)  {News mentions};
+        \node[n2] (t) at (8,-2)    {TV appearance};
+
+        \draw[very thick,->]
+          (m) edge (t)
+          (a) edge (m);
+      }
+
+      \only<3>{
+        \node[n2] (p) at (1.5,1)   {Published};
+        \node[n] (n) at (4.5,1)   {Novelty};
+        \node[n2] (m) at (6,-0.5)  {News mentions};
+
+        \draw[very thick,->]
+          (n) edge (m)
+              edge (p);
+      }
+
+      \only<4>{
+        \node[n2] (r) at (0,-0.5)  {Rigour};
+        \node[n] (p) at (1.5,1)   {Published};
+        \node[n] (n) at (4.5,1)   {Novelty};
+        \node[n2] (m) at (6,-0.5)  {News mentions};
+
+        \draw[very thick,->]
+          (r) edge (p)
+          (n) edge (p)
+              edge (m);
+      }
+    \end{tikzpicture}
+  \end{center}
+
+\end{frame}
+
+\begin{frame}[c]{$d$-separation -- Open paths \& nodes}
+
+  \centering
+  An undirected path is open if \emph{all} nodes on the path are\!
+  \only<1>{\tikz[baseline] { \node[inline,outer xsep=0pt,fill=white] {open}; } }
+  \only<2>{\tikz[baseline] { \node[inline,outer xsep=0pt,fill=Set1-A!20] {open}; } }\!\!\!.
+
+\end{frame}
+
+\tikzstyle{open}=[n,fill=white]
+\tikzstyle{closed}=[n,fill=black,text=white]
+\begin{frame}{$d$-separation -- Mediators, confounders \& colliders}
+
+  \begin{overlayarea}{\textwidth}{2cm}
+    \centering
+    \only<2>{Mediator (causation) -- Open}
+    \only<3>{Confounder -- Open}
+    \only<4>{Collider -- Closed}
+    \vskip5mm
+
+    \begin{tikzpicture}[x=2cm]
+      \only<2->{
+        \node (x) at (-1, 0) {$\cdots$};
+        \node[n,open] (z) at ( 0, 0) {$z$};
+        \node (y) at ( 1, 0) {$\cdots$};
+      }
+      \only<2>{
+        \draw[->] (x) edge (z)
+                  (z) edge (y);
+      }
+      \only<3>{
+        \draw[->] (z) edge (x)
+                      edge (y);
+      }
+      \only<4>{
+        \node[n,closed] (z) at ( 0, 0) {$z$};
+
+        \draw[->] (x) edge (z)
+                  (y) edge (z);
+      }
+    \end{tikzpicture}
+  \end{overlayarea}
+
+  \begin{center}
+    \begin{tikzpicture}
+      \draw[opacity=0] (-1,-1) grid (7,2);
+      \node[n,faded] (r) at (0,-0.5)  {Rigour};
+      \node[n,faded] (p) at (1.5,1)   {Published};
+      \node[n,faded] (n) at (4.5,1)   {Novelty};
+      \node[n,faded] (m) at (6,-0.5)  {News mentions};
+      \node[n,faded] (a) at (2.5, -2) {Author reputation};
+      \node[n,faded] (t) at (8,-2)    {TV appearance};
+
+      \draw[opacity=0.3,->]
+        (r) edge (p)
+        (n) edge (p)
+            edge (m)
+        (m) edge (t)
+        (a) edge (p)
+            edge (m);
+
+      \only<2>{
+        \node[n] (a) at (2.5, -2) {Author reputation};
+        \node[n,open] (m) at (6,-0.5)  {News mentions};
+        \node[n] (t) at (8,-2)    {TV appearance};
+
+        \draw[very thick,->]
+          (m) edge (t)
+          (a) edge (m);
+      }
+
+      \only<3>{
+        \node[n] (p) at (1.5,1)   {Published};
+        \node[n] (m) at (6,-0.5)  {News mentions};
+        \node[n,open] (n) at (4.5,1)   {Novelty};
+
+        \draw[very thick,->]
+          (n) edge (m)
+              edge (p);
+      }
+
+      \only<4>{
+        \node[n] (r) at (0,-0.5)  {Rigour};
+        \node[n] (m) at (6,-0.5)  {News mentions};
+        \node[n,closed] (p) at (1.5,1)   {Published};
+        \node[n,open] (n) at (4.5,1)   {Novelty};
+
+        \draw[very thick,->]
+          (r) edge (p)
+          (n) edge (p)
+              edge (m);
+      }
+    \end{tikzpicture}
+  \end{center}
+
+\end{frame}
+
+\begin{frame}[c]{Conditioning on variables}
+
+  Many possible ways to ``condition'' on a variable:
+  \begin{itemize}
+    \item Include only subset of cases in analysis.
+    \item Perform analyses separately on different subsets of data.
+    \item ``Normalise'' indicators (e.g field-normalise).
+    \item Include variable in regression.
+  \end{itemize}
+
+\end{frame}
+
+\tikzstyle{conditioned}=[rounded rectangle,draw=white,double=black]
+\begin{frame}[c]{$d$-separation -- Open nodes \& conditioning}
+
+  \centering
+  Conditioning on a variable ``flips'' the node on a path \\
+  from open
+  \tikz[baseline] { \node[anchor=south,n,open,draw=black] {}; }
+  to closed
+  \tikz[baseline] { \node[anchor=south,n,closed] {}; }
+  and vice-versa.
+
+  \vskip1.5cm
+
+  \begin{tabular}{lcc}
+     & Unconditioned & Conditioned \\[3mm]
+    Mediator &
+    \tikz{
+      \node (x) at (-1, 0) {$\cdots$};
+      \node[n,open] (z) at ( 0, 0) {$z$};
+      \node (y) at ( 1, 0) {$\cdots$};
+
+      \draw[->] (x) edge (z)
+                (z) edge (y);}
+      &
+      \tikz{
+        \node (x) at (-1, 0) {$\cdots$};
+        \node[n,closed,conditioned] (z) at ( 0, 0) {$z$};
+        \node (y) at ( 1, 0) {$\cdots$};
+
+        \draw[->] (x) edge (z)
+                  (z) edge (y);} \\[5mm]
+
+      Confounder &
+      \tikz{
+        \node (x) at (-1, 0) {$\cdots$};
+        \node[n,open] (z) at ( 0, 0) {$z$};
+        \node (y) at ( 1, 0) {$\cdots$};
+
+        \draw[->] (z) edge (x)
+                  (z) edge (y);}
+        &
+        \tikz{
+          \node (x) at (-1, 0) {$\cdots$};
+          \node[n,closed,conditioned] (z) at ( 0, 0) {$z$};
+          \node (y) at ( 1, 0) {$\cdots$};
+
+          \draw[->] (z) edge (x)
+                    (z) edge (y);} \\[5mm]
+
+        Collider &
+        \tikz{
+          \node (x) at (-1, 0) {$\cdots$};
+          \node[n,closed] (z) at ( 0, 0) {$z$};
+          \node (y) at ( 1, 0) {$\cdots$};
+
+          \draw[->] (x) edge (z)
+                    (y) edge (z);}
+          &
+          \tikz{
+            \node (x) at (-1, 0) {$\cdots$};
+            \node[n,open,conditioned] (z) at ( 0, 0) {$z$};
+            \node (y) at ( 1, 0) {$\cdots$};
+
+            \draw[->] (x) edge (z)
+                      (y) edge (z);} \\[5mm]
+  \end{tabular}
+
+\end{frame}
+
+\begin{frame}{$d$-separation -- Conditioning}
+  \begin{overlayarea}{\textwidth}{2cm}
+    \centering
+    \only<2>{Condition on mediator -- Closed}
+    \only<3>{Condition on confounder -- Closed}
+    \only<4>{Condition on collider -- Open}
+    \only<6->{Conditioning may close one path but open another.}
+    \vskip5mm
+
+    \begin{tikzpicture}[x=2cm]
+      \only<2-4>{
+        \node (x) at (-1, 0) {$\cdots$};
+        \node[n,closed,conditioned] (z) at ( 0, 0) {$z$};
+        \node (y) at ( 1, 0) {$\cdots$};
+      }
+      \only<2>{
+        \draw[->] (x) edge (z)
+                  (z) edge (y);
+      }
+      \only<3>{
+        \draw[->] (z) edge (x)
+                      edge (y);
+      }
+      \only<4>{
+        \node[n,open,conditioned] (z) at ( 0, 0) {$z$};
+
+        \draw[->] (x) edge (z)
+                  (y) edge (z);
+      }
+    \end{tikzpicture}
+  \end{overlayarea}
+
+  \begin{center}
+    \begin{tikzpicture}
+      \draw[opacity=0] (-1,-1) grid (7,2);
+      \node[n,faded] (r) at (0,-0.5)  {Rigour};
+      \node[n,faded] (p) at (1.5,1)   {Published};
+      \node[n,faded] (n) at (4.5,1)   {Novelty};
+      \node[n,faded] (m) at (6,-0.5)  {News mentions};
+      \node[n,faded] (a) at (2.5, -2) {Author reputation};
+      \node[n,faded] (t) at (8,-2)    {TV appearance};
+
+      \draw[opacity=0.3,->]
+        (r) edge (p)
+        (n) edge (p)
+            edge (m)
+        (m) edge (t)
+        (a) edge (p)
+            edge (m);
+
+      \only<2>{
+        \node[n] (a) at (2.5, -2) {Author reputation};
+        \node[n,closed,conditioned] (m) at (6,-0.5)  {News mentions};
+        \node[n] (t) at (8,-2)    {TV appearance};
+
+        \draw[very thick,->]
+          (m) edge (t)
+          (a) edge (m);
+      }
+
+      \only<3>{
+        \node[n] (p) at (1.5,1)   {Published};
+        \node[n] (m) at (6,-0.5)  {News mentions};
+        \node[n,closed,conditioned] (n) at (4.5,1)   {Novelty};
+
+        \draw[very thick,->]
+          (n) edge (m)
+              edge (p);
+      }
+
+      \only<4>{
+        \node[n] (r) at (0,-0.5)  {Rigour};
+        \node[n] (m) at (6,-0.5)  {News mentions};
+        \node[n,open,conditioned] (p) at (1.5,1)   {Published};
+        \node[n,open] (n) at (4.5,1)   {Novelty};
+
+        \draw[very thick,->]
+          (r) edge (p)
+          (n) edge (p)
+              edge (m);
+      }
+
+      \only<5>{
+        \node[n] (r) at (0,-0.5)  {Rigour};
+        \node[n] (m) at (6,-0.5)  {News mentions};
+        \node[n,open,conditioned] (p) at (1.5,1)   {Published};
+        \node[n,closed,conditioned] (n) at (4.5,1)   {Novelty};
+
+        \draw[very thick,->]
+          (r) edge (p)
+          (n) edge (p)
+              edge (m);
+      }
+
+      \only<6>{
+        \node[n] (a) at (2.5, -2) {Author reputation};
+        \node[n,closed,conditioned] (m) at (6,-0.5)  {News mentions};
+        \node[n] (t) at (8,-2)    {TV appearance};
+
+        \draw[very thick,->]
+          (m) edge (t)
+          (a) edge (m);
+      }
+
+      \only<7>{
+        \node[n] (a) at (2.5, -2) {Author reputation};
+        \node[n,open,conditioned] (m) at (6,-0.5)  {News mentions};
+        \node[n] (n) at (4.5,1)   {Novelty};
+
+        \draw[very thick,->]
+          (a) edge (m)
+          (n) edge (m);
+      }
+    \end{tikzpicture}
+  \end{center}
+
+\end{frame}
+
+  % \begin{tikzpicture}
+  %   \node[n,closed,conditioned] at (0,0) {$z$};
+  %   \begin{scope}
+  %     \clip (-1,0) rectangle (1,1);
+  %     \node[n,open,conditioned] at (0,0) {$z$};
+  %   \end{scope}
+  % \end{tikzpicture}
+
+\begin{frame}[c]{Conditioning on descendants and $d$-separation}
+
+  \centering
+  Conditioning on descendant of collider opens it.
+
+  \vskip1.5cm
+
+  \begin{tabular}{lccc}
+     & Unconditioned & Conditioned & Descendant conditioning \\[3mm]
+    Mediator &
+    \tikz{
+      \node (x) at (-1, 0) {$\cdots$};
+      \node[n,open] (z) at ( 0, 0) {$z$};
+      \node (y) at ( 1, 0) {$\cdots$};
+
+      \draw[->] (x) edge (z)
+                (z) edge (y);}
+      &
+      \tikz{
+        \node (x) at (-1, 0) {$\cdots$};
+        \node[n,closed,conditioned] (z) at ( 0, 0) {$z$};
+        \node (y) at ( 1, 0) {$\cdots$};
+
+        \draw[->] (x) edge (z)
+                  (z) edge (y);} \\[5mm]
+
+      Confounder &
+      \tikz{
+        \node (x) at (-1, 0) {$\cdots$};
+        \node[n,open] (z) at ( 0, 0) {$z$};
+        \node (y) at ( 1, 0) {$\cdots$};
+
+        \draw[->] (z) edge (x)
+                  (z) edge (y);}
+        &
+        \tikz{
+          \node (x) at (-1, 0) {$\cdots$};
+          \node[n,closed,conditioned] (z) at ( 0, 0) {$z$};
+          \node (y) at ( 1, 0) {$\cdots$};
+
+          \draw[->] (z) edge (x)
+                    (z) edge (y);} \\[5mm]
+
+        Collider &
+        \tikz{
+          \node (x) at (-1, 0) {$\cdots$};
+          \node[n,closed] (z) at ( 0, 0) {$z$};
+          \node (y) at ( 1, 0) {$\cdots$};
+
+          \draw[->] (x) edge (z)
+                    (y) edge (z);}
+          &
+          \tikz{
+            \node (x) at (-1, 0) {$\cdots$};
+            \node[n,open,conditioned] (z) at ( 0, 0) {$z$};
+            \node (y) at ( 1, 0) {$\cdots$};
+
+            \draw[->] (x) edge (z)
+                      (y) edge (z);}
+
+          &
+          \tikz{
+            \node (x) at (-1, 0) {$\cdots$};
+
+            \node[n,open] at (0,0) {$z$};
+            \node[n,conditioned] (w) at (0,0.8) {$\cdots$};
+
+            \node (y) at ( 1, 0) {$\cdots$};
+
+            \draw[->] (x) edge (z)
+                      (y) edge (z)
+                      (z) edge (w);}
+  \end{tabular}
+
+\end{frame}
+
+\begin{frame}{$d$-separation -- Conditioning on descendants}
+  \begin{overlayarea}{\textwidth}{2cm}
+    \centering
+    \only<2>{
+      Condition on descendant of collider -- Opens collider
+
+      \vskip5mm
+
+      \begin{tikzpicture}[x=2cm]
+          \node (x) at (-1, 0) {$\cdots$};
+
+          \node[n,open] at (0,0) {$z$};
+          \node[n,conditioned] (w) at (0,0.8) {$\cdots$};
+
+          \node (y) at ( 1, 0) {$\cdots$};
+
+          \draw[->] (x) edge (z)
+                    (y) edge (z)
+                    (z) edge (w);
+      \end{tikzpicture}
+    }
+  \end{overlayarea}
+
+  \begin{center}
+    \begin{tikzpicture}
+      \draw[opacity=0] (-1,-1) grid (7,2);
+      \node[n,faded] (r) at (0,-0.5)  {Rigour};
+      \node[n,faded] (p) at (1.5,1)   {Published};
+      \node[n,faded] (n) at (4.5,1)   {Novelty};
+      \node[n,faded] (m) at (6,-0.5)  {News mentions};
+      \node[n,faded] (a) at (2.5, -2) {Author reputation};
+      \node[n,faded] (t) at (8,-2)    {TV appearance};
+
+      \draw[opacity=0.3,->]
+        (r) edge (p)
+        (n) edge (p)
+            edge (m)
+        (m) edge (t)
+        (a) edge (p)
+            edge (m);
+
+      \only<2>{
+        \node[n] (a) at (2.5, -2) {Author reputation};
+        \node[n,open] (m) at (6,-0.5)  {News mentions};
+        \node[n] (n) at (4.5,1)   {Novelty};
+        \node[n,conditioned] (t) at (8,-2)    {TV appearance};
+
+        \draw[very thick,->]
+          (a) edge (m)
+          (n) edge (m);
+      }
+    \end{tikzpicture}
+  \end{center}
+
+\end{frame}
+
+\begin{frame}{$d$-separation summary}
+
+  \begin{enumerate}
+    \item<+-> $x$ and $y$ are associated if there is an open undirected path between them.
+    \item<+-> An undirected path is open if all nodes are open.
+    \item<+-> A node on a path is open
+    \tikz[baseline] { \node[anchor=south,n,open,draw=black] {}; }
+    or closed
+    \tikz[baseline] { \node[anchor=south,n,closed] {}; } in the following situations
+    \begin{itemize}
+      \item Conditioning on a variable ``flips'' nodes from open to closed and vice-versa.
+    \end{itemize}
+  \end{enumerate}
+
+  \vskip1cm
+
+  \uncover<3->{
+  \begin{tabular}{lccc}
+    & Unconditioned & Conditioned & Descendant conditioning \\[3mm]
+   Mediator &
+   \tikz{
+     \node (x) at (-1, 0) {$\cdots$};
+     \node[n,open] (z) at ( 0, 0) {$z$};
+     \node (y) at ( 1, 0) {$\cdots$};
+
+     \draw[->] (x) edge (z)
+               (z) edge (y);}
+     &
+     \tikz{
+       \node (x) at (-1, 0) {$\cdots$};
+       \node[n,closed,conditioned] (z) at ( 0, 0) {$z$};
+       \node (y) at ( 1, 0) {$\cdots$};
+
+       \draw[->] (x) edge (z)
+                 (z) edge (y);} \\[5mm]
+
+     Confounder &
+     \tikz{
+       \node (x) at (-1, 0) {$\cdots$};
+       \node[n,open] (z) at ( 0, 0) {$z$};
+       \node (y) at ( 1, 0) {$\cdots$};
+
+       \draw[->] (z) edge (x)
+                 (z) edge (y);}
+       &
+       \tikz{
+         \node (x) at (-1, 0) {$\cdots$};
+         \node[n,closed,conditioned] (z) at ( 0, 0) {$z$};
+         \node (y) at ( 1, 0) {$\cdots$};
+
+         \draw[->] (z) edge (x)
+                   (z) edge (y);} \\[5mm]
+
+       Collider &
+       \tikz{
+         \node (x) at (-1, 0) {$\cdots$};
+         \node[n,closed] (z) at ( 0, 0) {$z$};
+         \node (y) at ( 1, 0) {$\cdots$};
+
+         \draw[->] (x) edge (z)
+                   (y) edge (z);}
+         &
+         \tikz{
+           \node (x) at (-1, 0) {$\cdots$};
+           \node[n,open,conditioned] (z) at ( 0, 0) {$z$};
+           \node (y) at ( 1, 0) {$\cdots$};
+
+           \draw[->] (x) edge (z)
+                     (y) edge (z);}
+
+         &
+         \tikz{
+          \node (x) at (-1, 0) {$\cdots$};
+
+          \node[n,open] at (0,0) {$z$};
+          \node[n,conditioned] (w) at (0,0.8) {$\cdots$};
+
+          \node (y) at ( 1, 0) {$\cdots$};
+
+          \draw[->] (x) edge (z)
+                    (y) edge (z)
+                    (z) edge (w);}
+ \end{tabular}
+  }
+\end{frame}
+
+\begin{frame}{Further reading}
+
+  \centering
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \centering
+      \href{http://bayes.cs.ucla.edu/WHY/}{\includegraphics[height=7cm]{book-of-why-cover.jpeg}}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \centering
+      \href{http://bayes.cs.ucla.edu/PRIMER/}{\includegraphics[height=7cm]{primer-cover.jpg}}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+\end{document}
+
