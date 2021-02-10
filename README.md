@@ -10,7 +10,7 @@ The book chapter is aimed at social scientists who are interested in causal anal
 
 The concepts introduced in the book chapter may still be relatively difficult to understand without further explanation. In order to help you understand these concepts, there are two things that may help. First of all, I will explain the essence of these causal diagrams in a short lecture. We can get together after two weeks, so that you first have some time to try to understand the introductory paper yourself. If you have any questions, you can raise them during the lecture. After the lecture, you could then try to re-read the article to improve your understanding of the concepts.
 
-   **Please fill out this Doodle for picking a time for a lecture: https://doodle.com/poll/rvrchbrxsv87ycnw?utm_source=poll&utm_medium=link**
+   **Please fill out this Doodle for picking a time for a lecture: xxx**
 
 Secondly, you can draw causal diagrams, and read off its implications, in an online tool call Dagitty: http://www.dagitty.net/dags.html. A good exercise to make sure you properly understand the causal diagrams, is to draw the diagrams from the book chapter in Daggity. Of course, the results you get from Dagitty should be the same as in the book chapter. But perhaps you think some of the provided example causal diagrams are unrealistic: how do things change if you change the causal diagram?
 
